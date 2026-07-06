@@ -1,4 +1,4 @@
-package com.example.orn.config;
+package com.example.orn.util;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
