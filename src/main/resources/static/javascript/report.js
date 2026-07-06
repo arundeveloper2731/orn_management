@@ -7,8 +7,7 @@ function logout() {
     window.location.href = "login.html";
 }
 
-const API = "https://ornmanagement-production.up.railway.app";
-
+const API = "";
 
 const fromDate = document.getElementById("fromDate");
 const toDate = document.getElementById("toDate");

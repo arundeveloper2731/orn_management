@@ -7,8 +7,7 @@ function logout() {
     window.location.href = "login.html";
 }
 
-const API = "https://ornmanagement-production.up.railway.app";
-
+const API = "";
 
 // chart
 let chart;

@@ -8,8 +8,7 @@ function logout() {
     window.location.href = "login.html";
 }
 
-const API = "https://ornmanagement-production.up.railway.app";
-
+const API = "";
 const excelFile   = document.getElementById("excelFile");
 const dropZone    = document.getElementById("dropZone");
 const browseBtn   = document.getElementById("browseBtn");

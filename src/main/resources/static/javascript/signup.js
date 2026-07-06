@@ -14,8 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Password do not match");
             return;
         }
-        const API = "https://ornmanagement-production.up.railway.app";
-
+        const API = "";
         const user = {
             name: name,
             username: username,
