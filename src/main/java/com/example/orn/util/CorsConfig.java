@@ -21,7 +21,6 @@ public class CorsConfig {
                             "https://ornmanagement.netlify.app"
                         )
                         .allowedMethods("*");
-
             }
 
         };
