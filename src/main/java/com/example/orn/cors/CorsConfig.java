@@ -1,4 +1,4 @@
-package com.example.orn.util;
+package com.example.orn.cors;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
