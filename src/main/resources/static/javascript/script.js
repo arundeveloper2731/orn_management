@@ -7,6 +7,7 @@ function logout() {
     window.location.href = "login.html";
 }
 
+const API = "";
 
 // chart
 let chart;
@@ -17,7 +18,7 @@ window.onload = function () {
 
 async function loadDashboard() {
     try {
-        const response = await fetch("/api/index");
+        const response = await fetch(`${API}/api/index`);
         if (!response.ok) {
             throw new Error("API Error");
         }
@@ -34,14 +35,14 @@ async function loadDashboard() {
 
 
         document.getElementById("matchedCount").innerText = data.matchedCount || 0;
-        document.getElementById("duplicateCount").innerText = data.duplicateCount || 0;
+        document.getElementById("duplicateORN").innerText = data.duplicateCount || 0;
         document.getElementById("unMatchedORN").innerText = data.unmatchedCount || 0;
 
 
 
 
         //Table
-        loadRecentEntries(data.recentEntries ||[]);
+        loadRecentEntries(data.recentEntries || []);
         //chart
         loadChart(data);
     } catch (error) {
@@ -52,7 +53,7 @@ async function loadDashboard() {
 
 //loardrecententri
 function loadRecentEntries(list) {
-    const tbody = document.getElementById("recentEntriesBody");
+    const tbody = document.querySelector("tbody");
 
     tbody.innerHTML = "";
     list.forEach(item => {
@@ -93,9 +94,9 @@ function loadChart(data) {
             datasets: [{
 
                 data: [
-                        data.matchedCount || 0,
-                        data.duplicateCount || 0,
-                        data.unmatchedCount || 0
+                    data.matchedCount || 0,
+                    data.duplicateCount || 0,
+                    data.unmatchedCount || 0
                 ],
 
                 backgroundColor: [

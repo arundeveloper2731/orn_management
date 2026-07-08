@@ -7,6 +7,8 @@ function logout() {
     window.location.href = "login.html";
 }
 
+const API = "";
+
 const runMatchBtn = document.getElementById("runMatchBtn");
 const tableBody = document.getElementById("tableBody");
 
@@ -14,7 +16,8 @@ const emptyState = document.getElementById("emptyState");
 const resultSection = document.getElementById("resultSection");
 
 const matchedCount = document.getElementById("matchedCount");
-const unmatchedCount = document.getElementById("unmatchedCount");
+const partialCount = document.getElementById("partialCount");
+const missingExcelCount = document.getElementById("missingExcelCount");
 const missingManualCount = document.getElementById("missingManualCount");
 const duplicateCount = document.getElementById("duplicateCount");
 
@@ -27,13 +30,10 @@ const excelBody = document.getElementById("excelBody");
 const searchInput = document.getElementById("searchInput");
 const statusFilter = document.getElementById("statusFilter");
 const excelFileSelect = document.getElementById("excelFileSelect");
-const manualOrnInput = document.getElementById("manualOrnInput");
-const manualOrnList = document.getElementById("manualOrnList");
 
 let allData = [];
 
 loadExcelFileOptions();
-loadManualOrnOptions();
 
 runMatchBtn.addEventListener("click", runMatching);
 
@@ -54,7 +54,7 @@ async function loadExcelFileOptions() {
 
     try {
 
-        const response = await fetch("/api/excel/files");
+        const response = await fetch(`${API}/api/excel/files`);
 
         if (!response.ok) return;
 
@@ -77,55 +77,18 @@ async function loadExcelFileOptions() {
 
 }
 
-async function loadManualOrnOptions() {
-
-    try {
-
-        const response = await fetch("/api/orn");
-
-        if (!response.ok) return;
-
-        const entries = await response.json();
-
-        // De-duplicate ORN numbers before populating the searchable dropdown
-        const seen = new Set();
-
-        entries.forEach(entry => {
-
-            const orn = entry.ornNo;
-            if (!orn || seen.has(orn.toUpperCase())) return;
-
-            seen.add(orn.toUpperCase());
-
-            const opt = document.createElement("option");
-            opt.value = orn;
-            manualOrnList.appendChild(opt);
-
-        });
-
-    } catch (e) {
-
-        console.log("Unable to load manual ORN list", e);
-
-    }
-
-}
-
 async function runMatching() {
 
     const fileName = excelFileSelect.value;
-    const manualOrn = manualOrnInput.value.trim() || "all";
 
     runMatchBtn.disabled = true;
     excelFileSelect.disabled = true;
-    manualOrnInput.disabled = true;
     runMatchBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Matching...`;
 
     try {
 
         const response = await fetch(
-            "/api/matching/run?fileName=" + encodeURIComponent(fileName) +
-            "&manualOrn=" + encodeURIComponent(manualOrn),
+            `${API}/api/matching/run?fileName=` + encodeURIComponent(fileName),
             { method: "POST" }
         );
 
@@ -155,7 +118,6 @@ async function runMatching() {
 
         runMatchBtn.disabled = false;
         excelFileSelect.disabled = false;
-        manualOrnInput.disabled = false;
         runMatchBtn.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i> Run Matching`;
 
     }
@@ -172,13 +134,7 @@ function fillTable(data) {
 
         <tr>
 
-            <td>${item.manualOrn ?? item.orn ?? "-"}</td>
-
-            <td>${item.customerName ?? "-"}</td>
-
-            <td>${item.mobileNumber ?? "-"}</td>
-
-            <td>${item.excelOrn ?? "-"}</td>
+            <td>${item.orn}</td>
 
             <td>
 
@@ -191,6 +147,10 @@ function fillTable(data) {
             </td>
 
             <td>${item.matchPercentage}%</td>
+
+            <td>${item.customerName ?? "-"}</td>
+
+            <td>${item.mobileNumber ?? "-"}</td>
 
             <td>
 
@@ -220,9 +180,9 @@ function statusClass(status) {
 
             return "matched";
 
-        case "Unmatched":
+        case "Partial":
 
-            return "unmatched";
+            return "partial";
 
         case "Missing Excel":
 
@@ -248,8 +208,11 @@ function updateCards(data) {
     matchedCount.innerText =
         data.filter(x => x.status == "Matched").length;
 
-    unmatchedCount.innerText =
-        data.filter(x => x.status == "Unmatched").length;
+    partialCount.innerText =
+        data.filter(x => x.status == "Partial").length;
+
+    missingExcelCount.innerText =
+        data.filter(x => x.status == "Missing Excel").length;
 
     missingManualCount.innerText =
         data.filter(x => x.status == "Missing Manual").length;
@@ -267,10 +230,7 @@ function filterTable() {
 
     let filtered = allData.filter(item => {
 
-        const manualOrnVal = (item.manualOrn ?? item.orn ?? "").toLowerCase();
-        const excelOrnVal = (item.excelOrn ?? "").toLowerCase();
-
-        const ornMatch = manualOrnVal.includes(search) || excelOrnVal.includes(search);
+        const ornMatch = item.orn.toLowerCase().includes(search);
 
         const statusMatch =
             status == "all" || item.status == status;
@@ -298,7 +258,7 @@ async function viewDetails(orn) {
         const fileName = excelFileSelect.value;
 
         const response = await fetch(
-            "/api/matching/details/" + encodeURIComponent(orn) +
+            `${API}/api/matching/details/` + encodeURIComponent(orn) +
             "?fileName=" + encodeURIComponent(fileName)
         );
 
@@ -306,7 +266,7 @@ async function viewDetails(orn) {
 
         loadManual(data.manual, data.excel);
 
-        loadExcel(data.excel, data.manual, data.duplicateExcelRecords);
+        loadExcel(data.excel, data.manual);
 
         detailModal.style.display = "flex";
 
@@ -377,7 +337,7 @@ function loadManual(manual, excel) {
 
 }
 
-function loadExcel(excel, manual, duplicateExcelRecords) {
+function loadExcel(excel, manual) {
 
     excelBody.innerHTML = "";
 
@@ -409,33 +369,6 @@ function loadExcel(excel, manual, duplicateExcelRecords) {
         `;
 
     });
-
-    // Requirement: "If duplicate records exist, display every duplicate
-    // Excel record below the main Excel record."
-    if (Array.isArray(duplicateExcelRecords) && duplicateExcelRecords.length > 0) {
-
-        duplicateExcelRecords.forEach((dupExcel, index) => {
-
-            excelBody.innerHTML += `
-                <tr class="duplicate-divider">
-                    <td colspan="2"><b>Duplicate Excel Record #${index + 1}</b></td>
-                </tr>
-            `;
-
-            Object.entries(dupExcel).forEach(([key, value]) => {
-
-                excelBody.innerHTML += `
-                <tr>
-                    <td><b>${formatKey(key)}</b></td>
-                    <td>${value ?? ""}</td>
-                </tr>
-                `;
-
-            });
-
-        });
-
-    }
 
 }
 
